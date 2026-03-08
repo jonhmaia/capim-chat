@@ -1,0 +1,158 @@
+{
+  "name": "[Get] Tickers",
+  "nodes": [
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "tickers"
+            },
+            {
+              "name": "analise",
+              "type": "boolean"
+            },
+            {
+              "name": "nome"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        32
+      ],
+      "id": "cebba6cf-6e81-4394-b8fc-169249eb60ea",
+      "name": "input"
+    },
+    {
+      "parameters": {
+        "url": "=https://brapi.dev/api/quote/{{ $json.tickers }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer gFpLRvXF9zhpp5NP5dHP5u"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        288,
+        -192
+      ],
+      "id": "21e0c7dc-b3fe-4225-924a-b29dd3f303e5",
+      "name": "get data"
+    },
+    {
+      "parameters": {
+        "url": "=https://brapi.dev/api/quote/{{ $json.tickers }}",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "range",
+              "value": "3mo"
+            },
+            {
+              "name": "interval",
+              "value": "1d"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer gFpLRvXF9zhpp5NP5dHP5u"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        256,
+        32
+      ],
+      "id": "163fde1e-0cea-4738-802d-4ad834635217",
+      "name": "get data1"
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst dataRaw = $input.all()[0].json;\nconst apiResponse = Array.isArray(dataRaw) ? dataRaw[0] : dataRaw;\nconst stockData = apiResponse.results[0];\n\n// 2. Extrai apenas os preços ajustados para evitar distorções de dividendos\nconst prices = stockData.historicalDataPrice.map(item => item.adjustedClose);\n\n// 3. Função auxiliar para calcular tudo com base num número X de dias\nfunction calculateMetrics(closes, daysToCalculate) {\n  // Pega apenas os últimos X dias do array\n  const recentCloses = closes.slice(-daysToCalculate);\n  const actualDays = recentCloses.length;\n  \n  if (actualDays < 2) {\n    return { erro: \"Dias insuficientes para cálculo\" };\n  }\n\n  // --- VARIAÇÃO PERCENTUAL ---\n  const currentPrice = recentCloses[recentCloses.length - 1];\n  const oldPrice = recentCloses[0];\n  const percentVariation = ((currentPrice - oldPrice) / oldPrice) * 100;\n\n  // --- MÉDIA MÓVEL SIMPLES---\n  const sumCloses = recentCloses.reduce((acc, val) => acc + val, 0);\n  const sma = sumCloses / actualDays;\n\n  // --- VOLATILIDADE ANUALIZADA ---\n  const dailyReturns = [];\n  for (let i = 1; i < actualDays; i++) {\n    const dayReturn = (recentCloses[i] - recentCloses[i - 1]) / recentCloses[i - 1];\n    dailyReturns.push(dayReturn);\n  }\n\n  const meanReturn = dailyReturns.reduce((acc, val) => acc + val, 0) / dailyReturns.length;\n\n  let sumSquaredDiffs = 0;\n  for (let r of dailyReturns) {\n    sumSquaredDiffs += Math.pow(r - meanReturn, 2);\n  }\n  \n  const variance = sumSquaredDiffs / (dailyReturns.length - 1);\n  const standardDeviation = Math.sqrt(variance);\n  \n  // Multiplica por raiz de 252 (dias úteis no ano) e por 100 para virar porcentagem\n  const annualizedVolatility = standardDeviation * Math.sqrt(252) * 100;\n\n  // Formata os números para ficarem com 2 casas decimais, ideal para salvar em banco ou mandar via msg\n  return {\n    dias_analisados: actualDays,\n    variacao_percentual: Number(percentVariation.toFixed(2)),\n    sma: Number(sma.toFixed(2)),\n    volatilidade_anualizada_percentual: Number(annualizedVolatility.toFixed(2))\n  };\n}\n\n// 4. Executa os cálculos para as janelas de tempo desejadas\nconst metricas7Dias = calculateMetrics(prices, 7);\nconst metricas30Dias = calculateMetrics(prices, 30);\n\n// 5. Retorna o JSON limpo e formatado para o próximo nó da sua automação\nreturn {\n  ativo: stockData.symbol,\n  empresa: stockData.longName,\n  preco_atual: stockData.regularMarketPrice,\n  analise_curto_prazo: metricas7Dias,\n  analise_medio_prazo: metricas30Dias,\n  logomarca: stockData.logourl\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        496,
+        32
+      ],
+      "id": "4eade201-00ce-4928-ae9e-d85d9bb30b3b",
+      "name": "Calculadora"
+    }
+  ],
+  "pinData": {
+    "input": [
+      {
+        "json": {
+          "tickers": "BBDC4",
+          "analise": false,
+          "nome": ";"
+        },
+        "pairedItem": {
+          "item": 0
+        }
+      }
+    ]
+  },
+  "connections": {
+    "input": {
+      "main": [
+        [
+          {
+            "node": "get data1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get data": {
+      "main": [
+        []
+      ]
+    },
+    "get data1": {
+      "main": [
+        [
+          {
+            "node": "Calculadora",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "f79ab9e3-a10f-4ecd-8bef-94d428ae688a",
+  "meta": {
+    "instanceId": "bcce57cd8c5d86a54f450a5ec0aa708ee07e39e93307489a66aef3ea44364e29"
+  },
+  "id": "VeWi5O5NsePWu36T",
+  "tags": []
+}

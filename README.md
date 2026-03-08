@@ -1,36 +1,214 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Capim Chat UI — Frontend
 
-## Getting Started
+Frontend web do **Assistente Financeiro Multi-Agente (B3)**, construído com Next.js.  
+A aplicação oferece:
 
-First, run the development server:
+- chat com integração a webhook n8n;
+- renderização de payload financeiro estruturado;
+- alternância de tema claro/escuro;
+- painel de documentação técnica com diagrama Mermaid;
+- download dos workflows n8n diretamente pela interface.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## Sumário
+
+- [Visão Geral](#visão-geral)
+- [Stack](#stack)
+- [Arquitetura do Frontend](#arquitetura-do-frontend)
+- [Fluxo de Dados](#fluxo-de-dados)
+- [Estrutura de Pastas](#estrutura-de-pastas)
+- [Configuração de Ambiente](#configuração-de-ambiente)
+- [Execução Local](#execução-local)
+- [Scripts Disponíveis](#scripts-disponíveis)
+- [Contrato de Integração com Webhook](#contrato-de-integração-com-webhook)
+- [Endpoint Interno de Downloads (n8n)](#endpoint-interno-de-downloads-n8n)
+- [Qualidade e Testes](#qualidade-e-testes)
+- [Troubleshooting](#troubleshooting)
+
+## Visão Geral
+
+O app tem duas abas principais:
+
+- **Chat**: envio de mensagem ao backend n8n e exibição da resposta (texto + dados estruturados).
+- **Documentação**: arquitetura do sistema multi-agente, regras de segurança, detalhes da tool de ações e downloads de workflows.
+
+O frontend mantém um `userId` persistido em `localStorage` para continuidade de sessão e isolamento de contexto no backend.
+
+## Stack
+
+- **Framework**: Next.js 16 (App Router)
+- **UI**: React 19 + TypeScript (strict)
+- **Estilo**: Tailwind CSS v4
+- **HTTP client**: Axios
+- **Tema**: next-themes
+- **Diagramas**: Mermaid JS
+- **Lint**: ESLint (config Next)
+- **Testes**: Jest + Testing Library (infra configurada)
+
+## Arquitetura do Frontend
+
+### Entradas principais
+
+- `app/page.tsx`: entrada do app no cliente.
+- `components/ChatInterface.tsx`: shell principal, alterna entre abas `chat` e `docs`.
+
+### Camada de estado e integração
+
+- `hooks/useChat.ts`:
+  - gera/persiste `userId`;
+  - envia mensagens para o webhook;
+  - normaliza diferentes formatos de resposta do n8n;
+  - controla loading, erro e status de envio por mensagem.
+
+### Camada de apresentação
+
+- `components/Header.tsx`: cabeçalho com estado da conexão, troca de abas e reset.
+- `components/MessageList.tsx`: lista de mensagens com auto-scroll.
+- `components/MessageBubble.tsx`: renderização de texto, indicadores financeiros e logs.
+- `components/MessageInput.tsx`: input com validação e bloqueio durante loading.
+- `components/DocumentationPanel.tsx`: documentação técnica visual.
+- `components/MermaidDiagram.tsx`: compilação/renderização Mermaid no client.
+
+### Tema e layout global
+
+- `app/layout.tsx`: fonte, metadados e provider de tema.
+- `components/ThemeProvider.tsx` e `components/ModeToggle.tsx`: tema claro/escuro.
+
+## Fluxo de Dados
+
+1. Usuário digita no `MessageInput`.
+2. `useChat.sendMessage` cria mensagem local com status `sending`.
+3. Frontend envia `POST` para `NEXT_PUBLIC_WEBHOOK_URL`.
+4. Resposta é normalizada (objeto, array ou JSON em string).
+5. Mensagem do usuário vira `sent`; mensagem da assistente é adicionada.
+6. `MessageBubble` renderiza conteúdo textual e card técnico quando `data` existe.
+
+## Estrutura de Pastas
+
+```text
+capim-chat/
+├─ app/
+│  ├─ api/download/[workflow]/route.ts
+│  ├─ globals.css
+│  ├─ layout.tsx
+│  └─ page.tsx
+├─ components/
+│  ├─ ChatInterface.tsx
+│  ├─ DocumentationPanel.tsx
+│  ├─ Header.tsx
+│  ├─ MermaidDiagram.tsx
+│  ├─ MessageBubble.tsx
+│  ├─ MessageInput.tsx
+│  ├─ MessageList.tsx
+│  ├─ ModeToggle.tsx
+│  └─ ThemeProvider.tsx
+├─ hooks/
+│  └─ useChat.ts
+├─ types/
+│  └─ index.ts
+├─ __tests__/
+│  └─ MessageInput.test.tsx
+├─ Chat.json
+└─ [Get] Tickers.json
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Configuração de Ambiente
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Crie `.env.local` com base em `.env.local.example`.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+cp .env.local.example .env.local
+```
 
-## Learn More
+Variáveis:
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+NEXT_PUBLIC_WEBHOOK_URL=https://n8n.maiainteligencia.cloud/webhook/capim
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Se não for definida, o frontend usa esse mesmo valor como fallback.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Execução Local
 
-## Deploy on Vercel
+```bash
+npm install
+npm run dev
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Acesse:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```text
+http://localhost:3000
+```
+
+## Scripts Disponíveis
+
+```bash
+npm run dev     # ambiente de desenvolvimento
+npm run build   # build de produção
+npm run start   # sobe a aplicação em modo produção
+npm run lint    # análise estática com ESLint
+```
+
+## Contrato de Integração com Webhook
+
+Payload enviado pelo frontend:
+
+```json
+{
+  "message": "texto digitado",
+  "content": "texto digitado",
+  "timestamp": "ISO-8601",
+  "userId": "uuid",
+  "metadata": {
+    "userAgent": "browser ua",
+    "source": "capim-chat-ui"
+  }
+}
+```
+
+Campos esperados na resposta (flexível):
+
+```json
+{
+  "status": "success",
+  "message": "texto da resposta",
+  "data": {},
+  "LOGOMARCA": "url-opcional",
+  "meta": {
+    "llm_logs": []
+  }
+}
+```
+
+Observações:
+
+- `data` pode vir como objeto, array ou `null`.
+- o frontend tenta normalizar respostas em formatos alternativos (`text`, `output`, JSON serializado).
+- em caso de erro no request, a mensagem do usuário passa para status `error`.
+
+## Endpoint Interno de Downloads (n8n)
+
+O app expõe downloads de workflows n8n via API interna:
+
+- `GET /api/download/get-tickers` → baixa `[Get] Tickers.json`
+- `GET /api/download/chat` → baixa `Chat.json`
+
+Esse endpoint é usado na aba **Documentação** para facilitar importação no n8n.
+
+## Qualidade e Testes
+
+### Lint
+
+```bash
+npm run lint
+```
+
+### Testes
+
+Existe configuração de Jest + Testing Library e teste de exemplo em `__tests__/MessageInput.test.tsx`.
+
+Para executar manualmente:
+
+```bash
+npx jest
+```
