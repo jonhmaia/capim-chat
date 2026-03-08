@@ -13,8 +13,8 @@ const mermaidDiagram = `graph TD
 
     Keila -.->|Se o ticker estiver ausente| ToolAcoes[(Tool: Data Table 'ações')]
     ToolAcoes -.-> Keila
-    Keila -.->|Busca cotação e dados| ToolAPI[[Tool: COTACOES_API]]
-    ToolAPI -.-> Keila
+    Keila -.->|Consulta múltiplos ativos| ToolAPI[[Tool: Get Tickers]]
+    ToolAPI -.->|Split + Loop + Aggregate| Keila
 
     subgraph Contexto e Memória
         Memoria[(Buffer Window Memory)]
@@ -73,16 +73,19 @@ const securityRules = [
 ] as const;
 
 const acoesToolInputs = [
-  'tickers (string): código do ativo, ex.: BBDC4.',
+  'tickers (string): um ou mais códigos separados por vírgula, ex.: PETR4,AURE3.',
   'analise (boolean): controla modo de execução para consumo do fluxo.',
   'nome (string): nome da empresa quando aplicável no de/para.'
 ] as const;
 
 const acoesToolFlow = [
   'input (Execute Workflow Trigger): recebe parâmetros da Keila.',
-  'Data table ações: consulta base da B3 com nome da empresa e ticker.',
-  'get data1 (HTTP Request): consulta /api/quote com range=3mo e interval=1d.',
-  'Calculadora (Code): calcula variação, média móvel e volatilidade anualizada.'
+  'Split (Code): separa a string CSV em itens individuais de ticker.',
+  'loop (Split In Batches): processa ticker por ticker.',
+  'get data1 (HTTP Request): consulta /api/quote/{ticker}?range=3mo&interval=1d.',
+  'Calculadora (Code): calcula variação, média móvel e volatilidade anualizada por ativo.',
+  'Wait: aplica pausa entre iterações para reduzir risco de rate limit.',
+  'Aggregate: consolida todas as análises em um único payload de saída.'
 ] as const;
 
 const acoesToolMetrics = [
@@ -93,15 +96,13 @@ const acoesToolMetrics = [
 ] as const;
 
 const acoesToolOutput = [
-  'ativo',
-  'empresa',
-  'preco_atual',
-  'analise_curto_prazo',
-  'analise_medio_prazo',
-  'logomarca'
+  'Array agregado com um item por ativo.',
+  'Cada item contém: ativo, empresa, preco_atual, analise_curto_prazo, analise_medio_prazo e logomarca.'
 ] as const;
 
 const acoesToolNotes = [
+  'A entrada tickers usa o campo ticker singular após o Split para cada chamada HTTP.',
+  'No estado atual, o fluxo usa endpoint analítico em todas as consultas do loop.',
   'Retornar erro controlado quando não houver dados suficientes.',
   'Remover tokens hardcoded e usar variável de ambiente no n8n.',
   'Manter fallback para resposta vazia da API sem inventar dados.'

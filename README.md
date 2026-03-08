@@ -20,6 +20,7 @@ A aplicação oferece:
 - [Execução Local](#execução-local)
 - [Scripts Disponíveis](#scripts-disponíveis)
 - [Contrato de Integração com Webhook](#contrato-de-integração-com-webhook)
+- [Workflow Get Tickers (Multi-Ativos)](#workflow-get-tickers-multi-ativos)
 - [Endpoint Interno de Downloads (n8n)](#endpoint-interno-de-downloads-n8n)
 - [Qualidade e Testes](#qualidade-e-testes)
 - [Troubleshooting](#troubleshooting)
@@ -185,6 +186,25 @@ Observações:
 - `data` pode vir como objeto, array ou `null`.
 - o frontend tenta normalizar respostas em formatos alternativos (`text`, `output`, JSON serializado).
 - em caso de erro no request, a mensagem do usuário passa para status `error`.
+
+## Workflow Get Tickers (Multi-Ativos)
+
+A versão atual de `[Get] Tickers.json` suporta consulta de vários ativos em uma única chamada lógica.
+
+Fluxo interno no n8n:
+
+1. recebe `tickers` em formato CSV (ex.: `PETR4,AURE3`);
+2. nó `Split` separa a string em itens com campo `ticker`;
+3. nó `loop` (`Split In Batches`) itera ativo por ativo;
+4. `get data1` consulta Brapi por ticker: `/api/quote/{ticker}?range=3mo&interval=1d`;
+5. `Calculadora` computa métricas determinísticas por ativo;
+6. `Wait` reduz pressão de taxa entre iterações;
+7. `Aggregate` consolida a saída final em coleção única.
+
+Impactos na UI:
+
+- `data` tende a chegar como **array de ativos** com métricas;
+- o frontend já suporta renderização quando a resposta vem como array.
 
 ## Endpoint Interno de Downloads (n8n)
 

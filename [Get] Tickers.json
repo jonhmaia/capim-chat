@@ -29,30 +29,7 @@
     },
     {
       "parameters": {
-        "url": "=https://brapi.dev/api/quote/{{ $json.tickers }}",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "Authorization",
-              "value": "Bearer gFpLRvXF9zhpp5NP5dHP5u"
-            }
-          ]
-        },
-        "options": {}
-      },
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.4,
-      "position": [
-        288,
-        -192
-      ],
-      "id": "21e0c7dc-b3fe-4225-924a-b29dd3f303e5",
-      "name": "get data"
-    },
-    {
-      "parameters": {
-        "url": "=https://brapi.dev/api/quote/{{ $json.tickers }}",
+        "url": "=https://brapi.dev/api/quote/{{ $json.ticker}}",
         "sendQuery": true,
         "queryParameters": {
           "parameters": [
@@ -80,8 +57,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        256,
-        32
+        592,
+        128
       ],
       "id": "163fde1e-0cea-4738-802d-4ad834635217",
       "name": "get data1"
@@ -93,20 +70,74 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        496,
-        32
+        736,
+        224
       ],
       "id": "4eade201-00ce-4928-ae9e-d85d9bb30b3b",
       "name": "Calculadora"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Captura a string (ex: \"PETR4,AURE3\")\nconst inputString = $input.item.json.tickers;\n\n// 1. Divide pela vírgula\n// 2. .map() transforma cada ticker em um objeto { ticker: \"NOME\" }\n// 3. .trim() remove espaços extras acidentais\nconst splitTickers = inputString.split(',').map(ticker => {\n  return {\n    json: {\n      ticker: ticker.trim()\n    }\n  };\n});\n\nreturn splitTickers;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        208,
+        32
+      ],
+      "id": "b4301caf-78e5-4d0f-b536-452f44108dab",
+      "name": "Split"
+    },
+    {
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        768,
+        16
+      ],
+      "id": "04226d58-bdbc-4c1b-ba08-18217628b7ac",
+      "name": "Aggregate"
+    },
+    {
+      "parameters": {
+        "amount": 2
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        880,
+        304
+      ],
+      "id": "ef4f4506-4466-4565-91ee-fb3842a5ba58",
+      "name": "Wait",
+      "webhookId": "1459e563-739d-46f7-b1ec-96d3768b1860"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        416,
+        32
+      ],
+      "id": "a3891472-3780-4a54-8e38-8e0af8d7857d",
+      "name": "loop"
     }
   ],
   "pinData": {
     "input": [
       {
         "json": {
-          "tickers": "BBDC4",
+          "tickers": "PETR4,AURE3",
           "analise": false,
-          "nome": ";"
+          "nome": ""
         },
         "pairedItem": {
           "item": 0
@@ -119,16 +150,11 @@
       "main": [
         [
           {
-            "node": "get data1",
+            "node": "Split",
             "type": "main",
             "index": 0
           }
         ]
-      ]
-    },
-    "get data": {
-      "main": [
-        []
       ]
     },
     "get data1": {
@@ -136,6 +162,57 @@
         [
           {
             "node": "Calculadora",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split": {
+      "main": [
+        [
+          {
+            "node": "loop",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calculadora": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "loop",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "loop": {
+      "main": [
+        [
+          {
+            "node": "Aggregate",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "get data1",
             "type": "main",
             "index": 0
           }
@@ -149,7 +226,7 @@
     "binaryMode": "separate",
     "availableInMCP": false
   },
-  "versionId": "f79ab9e3-a10f-4ecd-8bef-94d428ae688a",
+  "versionId": "443f6cf8-42ae-40b4-ab08-ede1bd5eb83a",
   "meta": {
     "instanceId": "bcce57cd8c5d86a54f450a5ec0aa708ee07e39e93307489a66aef3ea44364e29"
   },

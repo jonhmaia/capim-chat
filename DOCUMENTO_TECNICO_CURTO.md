@@ -79,20 +79,20 @@ Para evitar deriva:
 
 ### 2.4 Seleção de endpoint da Brapi para a tool `[Get] Tickers`
 
-Para manter consistência entre objetivo e dados requisitados, foi escolhido o endpoint
+ A tool foi adaptada para múltiplos ativos com este fluxo:
 
-- **Consulta analítica (com cálculo)**: `GET /api/quote/{ticker}?range=3mo&interval=1d`
-  - obrigatório pois o fluxo precisa de `historicalDataPrice` para calcular variação, SMA e volatilidade.
-- **A tool está adaptada para a extração de multitickers**
-  - quando múltiplos tickers são fornecidos, a tool retorna um objeto com dados separados para cada ativo.
-  - se algum ticker não for encontrado, o fluxo falha com erro explícito.
-  - o brapi exige um plano pago para suportar a extração de multitickers(várias ações ao mesmo tempo).
-Regra operacional recomendada:
+- recebe `tickers` em lista da LLM (ex.: `PETR4,AURE3`);
+- divide por ticker individual por meio de um nó code(`Split`);
+- consulta cada ativo com `GET /api/quote/{ticker}?range=3mo&interval=1d`;
+- calcula métricas por ativo (`Calculadora`);
+- agrega tudo no final (`Aggregate`) em payload único que é enviado ao front end que renderiza 2 cards separdamente.
 
-- `analise = true` → endpoint com `range` + `interval`;
-- `analise = false` → endpoint simples.
+Motivo técnico: as métricas de variação, SMA e volatilidade dependem de `historicalDataPrice`, então o endpoint analítico é o que garante determinismo do cálculo.
 
-Observação importante: no objeto atual da tool, o fluxo conectado está passando pelo nó de histórico; logo, mesmo quando não precisa de análise, ele ainda faz chamada mais cara. O ideal é rotear por `analise` para garantir eficiência sem perder determinismo.
+Regra de evolução recomendada:
+
+- manter endpoint analítico quando houver cálculo;
+- criar bifurcação para endpoint simples quando `analise = false`, reduzindo custo e latência em consultas básicas.
 
 ## 3) Como escalar o sistema
 
@@ -171,8 +171,9 @@ Quanto mais estrutura for montada por código (e não “inventada” pelo model
 
 A escolha do endpoint da Brapi impacta custo e desempenho:
 
-- endpoint com histórico deve ser usado apenas quando houver cálculo;
-- endpoint simples reduz tráfego, tempo de resposta e processamento no n8n.
+- no fluxo atual multi-ativos, todas as iterações usam endpoint com histórico por exigência da `Calculadora`;
+- cada ativo adicional aumenta custo de API e latência total do loop;
+- endpoint simples em rota sem cálculo reduz tráfego, tempo de resposta e processamento no n8n.
 
 Em escala, essa separação evita consumo desnecessário em consultas básicas e melhora a relação custo/latência do sistema.
 
