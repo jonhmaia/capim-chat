@@ -9,9 +9,15 @@ interface MessageBubbleProps {
   message: Message;
 }
 
+const sanitizeLogomarca = (value: unknown): string => {
+  if (typeof value !== 'string') {
+    return '';
+  }
+  return value.trim().replace(/^["'`\s\\]+|["'`\s\\]+$/g, '');
+};
+
 const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
   const isUser = message.sender === 'user';
-  const content = message.content || '';
   const rawData = message.data;
   const dataEntries = Array.isArray(rawData)
     ? rawData.filter((item): item is Record<string, unknown> => typeof item === 'object' && item !== null)
@@ -32,7 +38,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
     const analiseTextual = typeof entry.analise_textual === 'string' ? entry.analise_textual : '';
     const disclaimer = typeof entry.disclaimer === 'string' ? entry.disclaimer : '';
     const logomarcaRaw = entry.LOGOMARCA ?? entry.logomarca;
-    const logomarca = typeof logomarcaRaw === 'string' ? logomarcaRaw.trim() : '';
+    const logomarca = sanitizeLogomarca(logomarcaRaw);
     const hasKnownFinancialFields = Boolean(
       ativo ||
         precoAtual ||
@@ -59,27 +65,11 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
       hasKnownFinancialFields,
     };
   };
-  const startsWithKeila = /^\s*keila\b/i.test(content);
-  const startsWithEd = /^\s*ed\b/i.test(content);
-  const mentionsKeila = /\bkeila\b/i.test(content);
-  const mentionsEd = /\bed\b/i.test(content);
-  const assistantProfile = startsWithEd || (!startsWithKeila && mentionsEd && !mentionsKeila)
-    ? {
-        fallback: 'ED',
-        name: 'Ed',
-        avatarClass: 'w-8 h-8 bg-yellow-400 text-gray-900 text-[11px]',
-      }
-    : startsWithKeila || mentionsKeila
-      ? {
-          fallback: 'KE',
-          name: 'Keila',
-          avatarClass: 'w-8 h-8 bg-green-500 text-white text-[11px]',
-        }
-      : {
-          fallback: 'AI',
-          name: 'Assistant',
-          avatarClass: 'w-8 h-8 bg-gradient-to-br from-blue-500 to-cyan-500 text-white text-[11px]',
-        };
+  const assistantProfile = {
+    fallback: 'WB',
+    name: 'Warren Buffet Consultoria',
+    avatarClass: 'w-8 h-8 bg-blue-600 text-white text-[11px]',
+  };
 
   return (
     <div
@@ -261,9 +251,9 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
 
       {isUser && (
         <Avatar
-          fallback="ED"
+          fallback="EU"
           wrapperClassName="mt-1"
-          className="w-8 h-8 bg-gradient-to-br from-emerald-500 to-teal-600 text-white text-[11px]"
+          className="w-8 h-8 bg-gray-600 text-white text-[11px]"
         />
       )}
     </div>

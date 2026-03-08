@@ -57,6 +57,42 @@ const normalizeWebhookResponse = (raw: unknown): WebhookResponse => {
   };
 };
 
+const sanitizeLogomarca = (value: unknown): string | null => {
+  if (typeof value !== 'string') {
+    return null;
+  }
+  const cleaned = value.trim().replace(/^["'`\s\\]+|["'`\s\\]+$/g, '');
+  return cleaned || null;
+};
+
+const enrichDataWithLogomarca = (
+  data: Record<string, unknown> | Record<string, unknown>[] | null,
+  logoRaw: unknown
+): Record<string, unknown> | Record<string, unknown>[] | null => {
+  const logo = sanitizeLogomarca(logoRaw);
+  if (!logo) {
+    return data;
+  }
+
+  if (Array.isArray(data)) {
+    return data.map((entry) => {
+      if (entry.LOGOMARCA || entry.logomarca) {
+        return entry;
+      }
+      return { ...entry, LOGOMARCA: logo };
+    });
+  }
+
+  if (data && typeof data === 'object') {
+    if (data.LOGOMARCA || data.logomarca) {
+      return data;
+    }
+    return { ...data, LOGOMARCA: logo };
+  }
+
+  return { LOGOMARCA: logo };
+};
+
 export const useChat = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -130,11 +166,15 @@ export const useChat = () => {
       );
 
       const normalizedText = responseData.message || 'Resposta recebida com sucesso.';
-      const normalizedData =
+      const parsedData =
         responseData.data &&
         (Array.isArray(responseData.data) || typeof responseData.data === 'object')
           ? responseData.data
           : null;
+      const normalizedData = enrichDataWithLogomarca(
+        parsedData,
+        responseData.LOGOMARCA ?? responseData.logomarca
+      );
 
       const botMessage: Message = {
         id: crypto.randomUUID(),

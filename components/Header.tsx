@@ -7,35 +7,47 @@ interface HeaderProps {
   onResetConversation: () => void;
   userId: string;
   isLoading?: boolean;
+  activeTab: 'chat' | 'docs';
+  onTabChange: (tab: 'chat' | 'docs') => void;
 }
 
-const Header: React.FC<HeaderProps> = ({ onResetConversation, userId, isLoading }) => {
+const Header: React.FC<HeaderProps> = ({ onResetConversation, userId, isLoading, activeTab, onTabChange }) => {
   const shortUserId = userId ? userId.slice(0, 8) : '--------';
 
   return (
     <div className="flex items-center justify-between px-4 py-3 bg-white/50 dark:bg-gray-900/50 border-b border-white/40 dark:border-gray-800/80 sticky top-0 z-10 backdrop-blur-xl transition-colors duration-200">
       <div className="flex items-center space-x-3">
-        <div className="relative w-[52px] h-10">
-          <Avatar
-            fallback="KE"
-            status="online"
-            wrapperClassName="absolute left-0 top-0"
-            className="w-10 h-10 bg-gradient-to-br from-fuchsia-500 to-indigo-600 text-white text-xs"
-          />
-          <Avatar
-            fallback="ED"
-            wrapperClassName="absolute right-0 bottom-0"
-            className="w-7 h-7 bg-gradient-to-br from-slate-700 to-slate-900 text-white text-[10px]"
-          />
-        </div>
+        <Avatar
+          fallback="WB"
+          status="online"
+          className="w-9 h-9 bg-blue-600 text-white text-[11px]"
+        />
         <div>
-          <h1 className="text-lg font-semibold text-gray-900 dark:text-gray-100 tracking-tight">Keila & Ed Assistant</h1>
-          <div className="flex items-center gap-2">
+          <h1 className="text-lg font-semibold text-gray-900 dark:text-gray-100 tracking-tight">Warren Buffet Consultoria</h1>
+          <div className="flex items-center gap-2 flex-wrap">
             <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
             <p className="text-xs text-green-600 dark:text-green-400 font-medium">Online</p>
             <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/70 dark:bg-gray-800/80 text-gray-500 dark:text-gray-400 border border-gray-200/70 dark:border-gray-700/80">
               ID {shortUserId}
             </span>
+            <div className="inline-flex items-center rounded-full p-0.5 bg-white/70 dark:bg-gray-800/80 border border-gray-200/70 dark:border-gray-700/80">
+              <button
+                onClick={() => onTabChange('chat')}
+                className={activeTab === 'chat'
+                  ? "px-2.5 py-1 rounded-full text-[10px] font-semibold bg-blue-600 text-white transition-colors"
+                  : "px-2.5 py-1 rounded-full text-[10px] font-medium text-gray-600 dark:text-gray-300 hover:bg-white/80 dark:hover:bg-gray-700/60 transition-colors"}
+              >
+                Chat
+              </button>
+              <button
+                onClick={() => onTabChange('docs')}
+                className={activeTab === 'docs'
+                  ? "px-2.5 py-1 rounded-full text-[10px] font-semibold bg-blue-600 text-white transition-colors"
+                  : "px-2.5 py-1 rounded-full text-[10px] font-medium text-gray-600 dark:text-gray-300 hover:bg-white/80 dark:hover:bg-gray-700/60 transition-colors"}
+              >
+                Documentação
+              </button>
+            </div>
           </div>
         </div>
       </div>

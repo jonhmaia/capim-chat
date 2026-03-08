@@ -4,7 +4,7 @@ import MessageInput from '@/components/MessageInput';
 import '@testing-library/jest-dom';
 
 describe('MessageInput', () => {
-  const placeholder = 'Pergunte para Keila ou Ed...';
+  const placeholder = 'Pergunte para Warren Buffet Consultoria...';
 
   it('renders input and button', () => {
     render(<MessageInput onSendMessage={() => {}} />);

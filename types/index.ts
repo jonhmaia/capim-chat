@@ -22,6 +22,8 @@ export interface WebhookResponse {
   status?: string;
   message?: string;
   data?: Record<string, unknown> | Record<string, unknown>[] | null;
+  logomarca?: string;
+  LOGOMARCA?: string;
   meta?: {
     llm_logs?: string[];
   };
