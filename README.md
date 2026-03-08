@@ -193,13 +193,15 @@ A versão atual de `[Get] Tickers.json` suporta consulta de vários ativos em um
 
 Fluxo interno no n8n:
 
-1. recebe `tickers` em formato CSV (ex.: `PETR4,AURE3`);
-2. nó `Split` separa a string em itens com campo `ticker`;
-3. nó `loop` (`Split In Batches`) itera ativo por ativo;
-4. `get data1` consulta Brapi por ticker: `/api/quote/{ticker}?range=3mo&interval=1d`;
-5. `Calculadora` computa métricas determinísticas por ativo;
-6. `Wait` reduz pressão de taxa entre iterações;
-7. `Aggregate` consolida a saída final em coleção única.
+1. Keila aceita entrada por ticker (ex.: `PETR4`) ou por nome (ex.: `Petrobras`);
+2. tool `ações` resolve de/para semântico nome→ticker na base B3 quando necessário;
+3. recebe `tickers` em formato CSV (ex.: `PETR4,AURE3`);
+4. nó `Split` separa a string em itens com campo `ticker`;
+5. nó `loop` (`Split In Batches`) itera ativo por ativo;
+6. `get data1` consulta Brapi por ticker: `/api/quote/{ticker}?range=3mo&interval=1d`;
+7. `Calculadora` computa métricas determinísticas por ativo;
+8. `Wait` reduz pressão de taxa entre iterações;
+9. `Aggregate` consolida a saída final em coleção única.
 
 Impactos na UI:
 

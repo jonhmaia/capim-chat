@@ -59,8 +59,9 @@ const edRules = [
 
 const keilaRules = [
   'Análise técnica, objetiva e baseada em dados reais.',
-  'Tem acesso à tabela de ações da B3 com nome da empresa e ticker.',
-  'Usa a tool ações para fazer o de/para de empresa para ticker quando necessário.',
+  'Aceita entrada direta por ticker (ex.: PETR4) ou por nome da empresa (ex.: Petrobras).',
+  'Usa a tabela de ações da B3 para busca semântica e de/para entre nome e ticker.',
+  'Com o ticker resolvido, chama a tool Get Tickers para coletar dados e calcular métricas.',
   'Usa a COTACOES_API para cotação, histórico e fundamentos.',
   'Entrega analise_textual e payload estruturado para o card do frontend.'
 ] as const;
@@ -73,13 +74,14 @@ const securityRules = [
 ] as const;
 
 const acoesToolInputs = [
-  'tickers (string): um ou mais códigos separados por vírgula, ex.: PETR4,AURE3.',
+  'tickers (string): aceita ticker(s) (PETR4,AURE3) ou nome(s) de empresa (Petrobras, Vale).',
   'analise (boolean): controla modo de execução para consumo do fluxo.',
-  'nome (string): nome da empresa quando aplicável no de/para.'
+  'nome (string): suporte explícito de nome corporativo para busca na tabela ações.'
 ] as const;
 
 const acoesToolFlow = [
   'input (Execute Workflow Trigger): recebe parâmetros da Keila.',
+  'Tool ações (Data Table B3): resolve semanticamente nome da empresa em ticker quando necessário.',
   'Split (Code): separa a string CSV em itens individuais de ticker.',
   'loop (Split In Batches): processa ticker por ticker.',
   'get data1 (HTTP Request): consulta /api/quote/{ticker}?range=3mo&interval=1d.',

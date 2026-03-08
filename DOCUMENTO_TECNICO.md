@@ -45,6 +45,13 @@ No fluxo financeiro, o LLM não “estima” cotação, risco ou variação:
 
 Isso transforma o LLM em camada de **interpretação e formatação**, não de geração de fatos.
 
+No caso da Keila, a entrada pode chegar de duas formas:
+
+- por ticker explícito (ex.: `PETR4`);
+- por nome semântico da empresa (ex.: `Petrobras`).
+
+Quando vem por nome, a tool `ações` resolve o de/para nome→ticker na base da B3 antes de chamar o endpoint de mercado.
+
 ## 2) Como garantir determinismo nos cálculos
 
 ### 2.1 Cálculo fora do LLM
@@ -79,13 +86,14 @@ Para evitar deriva:
 
 ### 2.4 Seleção de endpoint da Brapi para a tool `[Get] Tickers`
 
- A tool foi adaptada para múltiplos ativos com este fluxo:
+A tool foi adaptada para múltiplos ativos e também para entrada por ticker ou nome da empresa:
 
-- recebe `tickers` em lista da LLM (ex.: `PETR4,AURE3`);
+- recebe `tickers` em lista da LLM (ex.: `PETR4,AURE3`) ou nomes corporativos (ex.: `Petrobras,Vale`);
+- usa a tool `ações` para normalizar semanticamente nomes em tickers válidos da B3;
 - divide por ticker individual por meio de um nó code(`Split`);
 - consulta cada ativo com `GET /api/quote/{ticker}?range=3mo&interval=1d`;
 - calcula métricas por ativo (`Calculadora`);
-- agrega tudo no final (`Aggregate`) em payload único que é enviado ao front end que renderiza 2 cards separdamente.
+- agrega tudo no final (`Aggregate`) em payload único para o frontend renderizar um card por ativo.
 
 Motivo técnico: as métricas de variação, SMA e volatilidade dependem de `historicalDataPrice`, então o endpoint analítico é o que garante determinismo do cálculo.
 
